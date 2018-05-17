@@ -116,13 +116,22 @@ def preprocess():
 			samples = pre_emphasis(samples)
 
 
-			#CALCULATE SPECTROGRAM
+			#-------CALCULATE SPECTROGRAM
 			#_, _, specgram = log_specgram(samples, sample_rate=new_sample_rate)
+
+
+			#--------END
 
 			#x_train-APPEND(spectrogram)
 			#y_train-APPEND(label)
 		print("klar")
 		break
 
+	#x_train = np.array(x_train)
+	#x_train = x_train.reshape(tuple(list(x_train.shape) + [1]))
+	#y_train = label_transform(y_train)
+	#label_index = y_train.columns.values
+	#y_train = y_train.values
+	#y_train = np.array(y_train)
 
 preprocess()
