@@ -21,7 +21,7 @@ def list_wavs_fname(dirpath, ext='wav'):
         r = re.match(pat, fpath)
         if r:
             labels.append(r.group(1))
-    
+
     pat = r'.+/(\w+\.' + ext + ')$' #./filename.wav
     fnames = []
     for fpath in fpaths:
@@ -41,7 +41,7 @@ def read_data():
 	labels, fnames = list_wavs_fname(train_data_path)
 
 	#Read wav files and put in arrays
-	sample_rate_array,samples_array = [],[] 
+	sample_rate_array,samples_array = [],[]
 	for label, fname in zip(labels, fnames):
 		sample_rate, samples = wavfile.read(os.path.join(train_data_path, label, fname))
 		sample_rate_array.append(sample_rate)
@@ -62,8 +62,8 @@ def chop_audio(samples, L=16000, n=20):
         start = np.random.randint(0, len(samples) - L)
         yield samples[start: start + L]
 
-#Resamples 
-def resample(sample_rate,samples,L=16000,new_sample_rate=8000): 
+#Resamples
+def resample(sample_rate,samples,L=16000,new_sample_rate=8000):
     return sp_resample(samples, int(new_sample_rate / sample_rate * samples.shape[0]))
 
 #This or mean normalization?
@@ -84,7 +84,7 @@ def label_transform(labels):
 			nlabels.append(label)
 	return pd.get_dummies(pd.Series(nlabels))
 
-''' 
+'''
 Pre-processing:
 1. Choping/padding data
 2. Resample data
@@ -105,15 +105,15 @@ def preprocess():
 	new_sample_rate = 8000 #Want to resample from L to new_sample_rate
 
 	print("***Starts preprocessing***")
-	#For each clip of sound 
+	#For each clip of sound
 	for sample_rate,samples,label in zip(sample_rates,signals,labels):
 		samples = pad_audio(samples) #Custom function (pads samples < 16000)
 		if(len(samples) > L):
 			n_samples = chop_audio(samples) #Custom function (chops samples > 16000)
 		else:
-			n_samples = [samples] 
-	    
-	    #For each clip of sound (equals to one if clip not longer than 16000) 
+			n_samples = [samples]
+
+	    #For each clip of sound (equals to one if clip not longer than 16000)
 		for samples in n_samples:
 			samples = resample(sample_rate,samples) #Resample from 16000 to 8000
 			samples = pre_emphasis(samples)
@@ -146,15 +146,15 @@ def preprocess2():
 	L = 16000
 
 	print("***Starts preprocessing***")
-	#For each clip of sound 
+	#For each clip of sound
 	for sample_rate,samples,label in zip(sample_rates,signals,labels):
 		samples = pad_audio(samples) #Custom function (pads samples < 16000)
 		if(len(samples) > L):
 			n_samples = chop_audio(samples) #Custom function (chops samples > 16000)
 		else:
-			n_samples = [samples] 
-	    
-	    #For each clip of sound (equals to one if clip not longer than 16000) 
+			n_samples = [samples]
+
+	    #For each clip of sound (equals to one if clip not longer than 16000)
 		for samples in n_samples:
 
 			samples = preEmph(samples)
@@ -186,5 +186,8 @@ def preprocess2():
 	y_train = y_train.values
 	y_train = np.array(y_train)
 
-	return x_train, y_train
+    # Split train to train test and val (70, 20, 10)
+    x_train, x_tmp, y_train, y_tmp = train_test_split(x_train, y_train, test_size=0.3, random_state=2017)
+    x_test, x_valid, y_test, y_valid = train_test_split(x_tmp, y_tmp, test_size=0.33, random_state=2017)
 
+	return x_train, y_train, x_test, y_test, x_valid, y_valid
