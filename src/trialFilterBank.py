@@ -27,7 +27,7 @@ def preEmph(signal, pre_emphasis=0.97):
 	emphasized_signal = np.append(signal[0], signal[1:] - pre_emphasis * signal[:-1])
 	return emphasized_signal
 
-def framing(signal, frame_size=0.025, frame_stride=0.01):
+def framing(signal, sample_rate, frame_size=0.025, frame_stride=0.01):
 	#Framing
 
 	frame_length, frame_step = frame_size * sample_rate, frame_stride * sample_rate  # Convert from seconds to samples
@@ -56,7 +56,7 @@ def fftPs(frames, NFFT=512):
 	pow_frames = ((1.0 / NFFT) * ((mag_frames) ** 2))  # Power Spectrum
 	return pow_frames
 
-def filterBank(pow_frames, nfilt=40, NFFT=512):
+def filterBank(pow_frames, sample_rate, nfilt=40, NFFT=512):
 	#Filter banks
 	low_freq_mel = 0
 	high_freq_mel = (2595 * np.log10(1 + (sample_rate / 2) / 700))  # Convert Hz to Mel
@@ -83,103 +83,139 @@ def meanNormalization(spec):
 	#Mean normalization
 	return spec - (np.mean(spec, axis=0) + 1e-8)
 
+def cleanNaN(matrix):
+	indexNaNs = np.isnan(matrix)
+	matrix[indexNaNs] = np.nanmin(matrix)
+	return matrix
 
 
-#MAIN
-sample_rate, signal = scipy.io.wavfile.read('../data/train/audio/happy/0ac15fe9_nohash_0.wav')
-print("Sample rate:", sample_rate)
-print("Signal:", signal.shape)
+def runplot(file):
+	#MAIN
+	sample_rate, signal = scipy.io.wavfile.read('../data/train/audio/' + file)
+	print(file)
+	print("Sample rate:", sample_rate)
+	print("Signal:", signal.shape)
 
-#Running log_spec from lightweight. No other pre-processing
-freqs, times, logSpec = log_specgram(signal, sample_rate)
+	#Running log_spec from lightweight. No other pre-processing
+	freqs, times, logSpec = log_specgram(signal, sample_rate)
 
-#Running log_spec from lightweight. Pre-emphasized
-signalP = preEmph(signal)
-freqsP, timesP, logSpecP = log_specgram(signalP, sample_rate)
+	#Running log_spec from lightweight. Pre-emphasized
+	signalP = preEmph(signal)
+	freqsP, timesP, logSpecP = log_specgram(signalP, sample_rate)
 
-#Running log_spec from lightweight. Pre-emphasized and mean normalized
-logSpecPM = meanNormalization(logSpecP)
+	#Running log_spec from lightweight. Pre-emphasized and mean normalized
+	logSpecPM = meanNormalization(logSpecP)
 
-#Running custom spec. No other pre-processing
-frames, frameLength = framing(signal)
-frames = windowing(frames, frameLength)
-powFrames = fftPs(frames)
-custSpec = filterBank(powFrames)
+	#Running custom spec. No other pre-processing
+	frames, frameLength = framing(signal, sample_rate)
+	frames = windowing(frames, frameLength)
+	powFrames = fftPs(frames)
+	custSpec = np.log(filterBank(powFrames, sample_rate) + 1e-10)
 
-#RUnning custom spec. Pre-emphasized
-framesP, frameLengthP = framing(signalP)
-framesP = windowing(framesP, frameLengthP)
-powFramesP = fftPs(framesP)
-custSpecP = filterBank(powFramesP)
+	#RUnning custom spec. Pre-emphasized
+	framesP, frameLengthP = framing(signalP, sample_rate)
+	framesP = windowing(framesP, frameLengthP)
+	powFramesP = fftPs(framesP)
+	custSpecP = np.log(filterBank(powFramesP, sample_rate) + 1e-10)
 
-#Running custom spec. Pre-emphasized and mean normalized
-custSpecPM = meanNormalization(custSpecP)
+	#Running custom spec. Pre-emphasized and mean normalized
+	#custSpecPM = meanNormalization(filterBank(powFramesP))
+	custSpecPM = np.log(meanNormalization(filterBank(powFramesP, sample_rate)) + 1e-10)
+	custSpecPM = cleanNaN(custSpecPM)
 
 
 
 
-#Plot emphasized wave
-fig = plt.figure(figsize=(14, 8))
-ax1 = fig.add_subplot(211)
-ax1.set_title('Raw wave')
-ax1.set_ylabel('Amplitude')
-ax1.plot(np.linspace(0, sample_rate/len(signal), sample_rate), signal)
+	#Plot emphasized wave
+	fig = plt.figure(figsize=(14, 8))
+	ax1 = fig.add_subplot(211)
+	ax1.set_title('Raw wave')
+	ax1.set_ylabel('Amplitude')
+	ax1.plot(np.linspace(0, sample_rate/len(signal), sample_rate), signal)
 
-ax2 = fig.add_subplot(212)
-ax2.set_title('Emphasized wave')
-ax2.set_ylabel('Amplitude')
-ax2.plot(np.linspace(0, sample_rate/len(signalP), sample_rate), signalP)
+	ax2 = fig.add_subplot(212)
+	ax2.set_title('Emphasized wave')
+	ax2.set_ylabel('Amplitude')
+	ax2.plot(np.linspace(0, sample_rate/len(signalP), sample_rate), signalP)
 
-plt.plot()
-plt.show()
+	plt.plot()
+	plt.show()
 
-#Print shapes
-print('logSpec:', logSpec.shape)
-print('custSpec:', custSpec.shape)
+	#Print shapes
+	print('logSpec:', logSpec.shape)
+	print('custSpec:', custSpec.shape)
 
-#Plot spectrograms
-fig = plt.figure(figsize=(14, 8))
-ax1 = fig.add_subplot(321)
-ax1.set_title('LogSpec')
-ax1.set_ylabel('Hz')
-ax1.set_xlabel('Sec')
-ax1.imshow(logSpec.T, aspect='auto', origin='lower', cmap=cm.jet, 
-           extent=[times.min(), times.max(), freqs.min(), freqs.max()])
+	#Plot spectrograms
+	fig = plt.figure(figsize=(14, 8))
+	ax1 = fig.add_subplot(321)
+	ax1.set_title('LogSpec')
+	ax1.set_ylabel('Hz')
+	ax1.set_xlabel('Sec')
+	im1 = ax1.imshow(logSpec.T, aspect='auto', origin='lower', cmap=cm.jet, 
+	           extent=[times.min(), times.max(), freqs.min(), freqs.max()])
+	fig.colorbar(im1)
 
-ax3 = fig.add_subplot(323)
-ax3.set_title('LogSpecP')
-ax3.set_ylabel('Hz')
-ax3.set_xlabel('Sec')
-ax3.imshow(logSpecP.T, aspect='auto', origin='lower', cmap=cm.jet, 
-           extent=[timesP.min(), timesP.max(), freqsP.min(), freqsP.max()])
+	ax3 = fig.add_subplot(323)
+	ax3.set_title('LogSpecP')
+	ax3.set_ylabel('Hz')
+	ax3.set_xlabel('Sec')
+	im3 = ax3.imshow(logSpecP.T, aspect='auto', origin='lower', cmap=cm.jet, 
+	           extent=[timesP.min(), timesP.max(), freqsP.min(), freqsP.max()])
+	fig.colorbar(im3)
 
-ax5 = fig.add_subplot(325)
-ax5.set_title('LogSpecPM')
-ax5.set_ylabel('Hz')
-ax5.set_xlabel('Sec')
-ax5.imshow(logSpecPM.T, aspect='auto', origin='lower', cmap=cm.jet, 
-           extent=[timesP.min(), timesP.max(), freqsP.min(), freqsP.max()])
+	ax5 = fig.add_subplot(325)
+	ax5.set_title('LogSpecPM')
+	ax5.set_ylabel('Hz')
+	ax5.set_xlabel('Sec')
+	im5 = ax5.imshow(logSpecPM.T, aspect='auto', origin='lower', cmap=cm.jet, 
+	           extent=[timesP.min(), timesP.max(), freqsP.min(), freqsP.max()])
+	fig.colorbar(im5)
 
-ax2 = fig.add_subplot(322)
-ax2.set_title('CustSpec')
-ax2.set_ylabel('Hz')
-ax2.set_xlabel('Sec')
-ax2.imshow(np.flipud(custSpec.T), cmap=cm.jet, aspect='auto', 
-		   extent=[times.min(), times.max(), freqs.min(), freqs.max()])
+	ax2 = fig.add_subplot(322)
+	ax2.set_title('CustSpec')
+	ax2.set_ylabel('Hz')
+	ax2.set_xlabel('Sec')
+	im2 = ax2.imshow(np.flipud(custSpec.T), cmap=cm.jet, aspect='auto', 
+			   extent=[times.min(), times.max(), freqs.min(), freqs.max()])
+	fig.colorbar(im2)
 
-ax4 = fig.add_subplot(324)
-ax4.set_title('CustSpecP')
-ax4.set_ylabel('Hz')
-ax4.set_xlabel('Sec')
-ax4.imshow(np.flipud(custSpecP.T), cmap=cm.jet, aspect='auto', 
-		   extent=[timesP.min(), timesP.max(), freqsP.min(), freqsP.max()])
+	ax4 = fig.add_subplot(324)
+	ax4.set_title('CustSpecP')
+	ax4.set_ylabel('Hz')
+	ax4.set_xlabel('Sec')
+	im4 = ax4.imshow(np.flipud(custSpecP.T), cmap=cm.jet, aspect='auto', 
+			   extent=[timesP.min(), timesP.max(), freqsP.min(), freqsP.max()])
+	fig.colorbar(im4)
 
-ax6 = fig.add_subplot(326)
-ax6.set_title('CustSpecPM')
-ax6.set_ylabel('Hz')
-ax6.set_xlabel('Sec')
-ax6.imshow(np.flipud(custSpecPM.T), cmap=cm.jet, aspect='auto', 
-		   extent=[timesP.min(), timesP.max(), freqsP.min(), freqsP.max()])
+	ax6 = fig.add_subplot(326)
+	ax6.set_title('CustSpecPM')
+	ax6.set_ylabel('Hz')
+	ax6.set_xlabel('Sec')
+	im6 = ax6.imshow(np.flipud(custSpecPM.T), cmap=cm.jet, aspect='auto', 
+			   extent=[timesP.min(), timesP.max(), freqsP.min(), freqsP.max()])
+	fig.colorbar(im6)
 
-plt.plot()
-plt.show()
+	plt.plot()
+	plt.show()
+
+
+
+files = ['happy/0ac15fe9_nohash_0.wav', 
+		'bed/0c40e715_nohash_0.wav', 
+		'dog/a60a09cf_nohash_0.wav', 
+		'down/8056e897_nohash_0.wav', 
+		'eight/37dca74f_nohash_0.wav']
+
+files2 = ['marvin/1b4c9b89_nohash_0.wav',
+		'marvin/1f3bece8_nohash_0.wav',
+		'marvin/1f653d27_nohash_0.wav',
+		'marvin/1fe4c891_nohash_0.wav',
+		'marvin/20d3f11f_nohash_0.wav',
+		'marvin/24ad3ebe_nohash_0.wav',
+		'marvin/24ad3ebe_nohash_1.wav',
+		'marvin/24ad3ebe_nohash_2.wav',
+		'marvin/24ad3ebe_nohash_3.wav',
+		'marvin/27c30960_nohash_0.wav',
+		'marvin/2aa787cf_nohash_0.wav']
+#for file in files2:
+	#runplot(file) 

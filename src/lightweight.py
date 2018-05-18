@@ -20,7 +20,7 @@ legal_labels = 'yes no up down left right on off stop go silence unknown'.split(
 #src folders
 root_path = r'..'
 out_path = r'../out'
-model_path = r'../model'
+model_path = r'../model/'
 train_data_path = os.path.join(root_path, 'data', 'train', 'audio')
 test_data_path = os.path.join(root_path, 'data', 'test', 'audio')
 
@@ -137,7 +137,7 @@ model.compile(optimizer=opt, loss=losses.binary_crossentropy)
 model.summary()
 
 x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.1, random_state=2017)
-model.fit(x_train, y_train, batch_size=16, validation_data=(x_valid, y_valid), epochs=3, shuffle=True, verbose=2)
+model.fit(x_train, y_train, batch_size=16, validation_data=(x_valid, y_valid), epochs=1, shuffle=True, verbose=2)
 
 model.save(os.path.join(model_path, 'cnn.model'))
 

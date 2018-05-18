@@ -2,10 +2,14 @@ from keras import optimizers, losses, activations, models
 from keras.layers import Convolution2D, Dense, Input, Flatten, Dropout, MaxPooling2D, BatchNormalization
 from sklearn.model_selection import train_test_split
 import keras
-from keras import sequential
+from keras.models import Sequential
+from preprocessing import *
 
 
-input_shape = (99, 81, 1)
+x_train, y_train = preprocess2()
+
+input_shape = x_train[0].shape
+print(input_shape)
 #input_shape = x_train.shape #Lägg på en etta på slutet
 nclass = 12
 #nclass = y_train något
@@ -41,4 +45,5 @@ model.summary()
 x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.1, random_state=2017)
 model.fit(x_train, y_train, batch_size=16, validation_data=(x_valid, y_valid), epochs=3, shuffle=True, verbose=2)
 
+model_path = r'../model/'
 model.save(os.path.join(model_path, 'cnn.model'))

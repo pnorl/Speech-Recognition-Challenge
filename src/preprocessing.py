@@ -4,6 +4,8 @@ import re
 import scipy
 from scipy.io import wavfile
 from scipy.signal import resample as sp_resample
+from trialFilterBank import *
+import pandas as pd
 
 import numpy as np
 
@@ -71,15 +73,16 @@ def pre_emphasis(signal,pre_emphasis = 0.97):
 
 #Transforms label to its valid form (and one-hot-encodes it?)
 def label_transform(labels):
-    nlabels = []
-    for label in labels:
-        if label == '_background_noise_':
-            nlabels.append('silence')
-        elif label not in legal_labels:
-            nlabels.append('unknown')
-        else:
-            nlabels.append(label)
-    return pd.get_dummies(pd.Series(nlabels))
+	legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
+	nlabels = []
+	for label in labels:
+		if label == '_background_noise_':
+			nlabels.append('silence')
+		elif label not in legal_labels:
+			nlabels.append('unknown')
+		else:
+			nlabels.append(label)
+	return pd.get_dummies(pd.Series(nlabels))
 
 ''' 
 Pre-processing:
@@ -134,4 +137,54 @@ def preprocess():
 	#y_train = y_train.values
 	#y_train = np.array(y_train)
 
-preprocess()
+def preprocess2():
+	print("***Reading data from file***")
+	sample_rates,signals,labels = read_data()
+
+	x_train = [] #Array of spectrograms
+	y_train = [] #Array of labels, later to be one-hot-encoded
+	L = 16000
+
+	print("***Starts preprocessing***")
+	#For each clip of sound 
+	for sample_rate,samples,label in zip(sample_rates,signals,labels):
+		samples = pad_audio(samples) #Custom function (pads samples < 16000)
+		if(len(samples) > L):
+			n_samples = chop_audio(samples) #Custom function (chops samples > 16000)
+		else:
+			n_samples = [samples] 
+	    
+	    #For each clip of sound (equals to one if clip not longer than 16000) 
+		for samples in n_samples:
+
+			samples = preEmph(samples)
+			frames, framesLength = framing(samples, L)
+			frames = windowing(frames, framesLength)
+			powFrames = fftPs(frames)
+			specgram = filterBank(powFrames, L)
+			specgram = np.log(meanNormalization(specgram) + 1e-10)
+			specgram = cleanNaN(specgram)
+			if np.isnan(np.nanmin(specgram)):
+				continue
+
+			#-------CALCULATE SPECTROGRAM
+			#_, _, specgram = log_specgram(samples, sample_rate=new_sample_rate)
+
+
+			#--------END
+
+			x_train.append(specgram)
+			y_train.append(label)
+
+
+	print("klar")
+	x_train = np.array(x_train)
+	print(x_train.shape)
+	x_train = x_train.reshape(tuple(list(x_train.shape) + [1]))
+	y_train = label_transform(y_train)
+	label_index = y_train.columns.values
+	y_train = y_train.values
+	y_train = np.array(y_train)
+
+	return x_train, y_train
+
