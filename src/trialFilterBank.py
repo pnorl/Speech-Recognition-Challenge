@@ -10,6 +10,8 @@ from scipy import signal as sig
 
 def log_specgram(audio, sample_rate, window_size=25,
                  step_size=10, nfft=512, eps=1e-10):
+	#Old spec-maker from internet
+	#Not used anymore
     nperseg = int(round(window_size * sample_rate / 1e3))
     noverlap = int(round(step_size * sample_rate / 1e3))
     freqs, times, spec = sig.spectrogram(audio,
@@ -89,8 +91,55 @@ def cleanNaN(matrix):
 	return matrix
 
 
+
+###HERE ARE THE FUNCTIONS WE REACH FROM OUTSIDE
+def filBank(signal, sample_rate, frame_size=0.025, frame_stride=0.01, nfilt=40, NFFT=512):
+	##Filter bank without any other preprocessing
+	frames, frameLength = framing(signal, sample_rate, frame_size, frame_stride)
+	frames = windowing(frames, frameLength)
+	powFrames = fftPs(frames, NFFT)
+	spectrogram = filterBank(powFrames, sample_rate, nfilt, NFFT)
+	spectrogram = np.log(spectrogram)
+	return cleanNaN(spectrogram)
+
+def filBankP(signal, sample_rate, pre_emphasis=0.97, frame_size=0.025, frame_stride=0.01, nfilt=40, NFFT=512):
+	##Filter bank with pre-emphasis
+	signal = preEmph(signal, pre_emphasis)
+	frames, frameLength = framing(signal, sample_rate, frame_size, frame_stride)
+	frames = windowing(frames, frameLength)
+	powFrames = fftPs(frames, NFFT)
+	spectrogram = filterBank(powFrames, sample_rate, nfilt, NFFT)
+	spectrogram = np.log(spectrogram)
+	return cleanNaN(spectrogram)
+
+def filBankM(signal, sample_rate, frame_size=0.025, frame_stride=0.01, nfilt=40, NFFT=512):
+	##Filter bank with mean normalization
+	frames, frameLength = framing(signal, sample_rate, frame_size, frame_stride)
+	frames = windowing(frames, frameLength)
+	powFrames = fftPs(frames, NFFT)
+	spectrogram = filterBank(powFrames, sample_rate, nfilt, NFFT)
+	spectrogram = meanNormalization(spectrogram)
+	spectrogram = np.log(spectrogram)
+	return cleanNaN(spectrogram)
+
+def filBankPM(signal, sample_rate, pre_emphasis=0.97, frame_size=0.025, frame_stride=0.01, nfilt=40, NFFT=512):
+	##Filter bank with pre-emphasis and mean normalization
+	signal = preEmph(signal, pre_emphasis)
+	frames, frameLength = framing(signal, sample_rate, frame_size, frame_stride)
+	frames = windowing(frames, frameLength)
+	powFrames = fftPs(frames, NFFT)
+	spectrogram = filterBank(powFrames, sample_rate, nfilt, NFFT)
+	spectrogram = meanNormalization(spectrogram)
+	spectrogram = np.log(spectrogram)
+	return cleanNaN(spectrogram)
+
+
+
+
 def runplot(file):
-	#MAIN
+	#Used to visualize
+	#Not used anymore
+
 	sample_rate, signal = scipy.io.wavfile.read('../data/train/audio/' + file)
 	print(file)
 	print("Sample rate:", sample_rate)
