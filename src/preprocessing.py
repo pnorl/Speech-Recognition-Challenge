@@ -6,6 +6,7 @@ from scipy.io import wavfile
 from scipy.signal import resample as sp_resample
 from trialFilterBank import *
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 import numpy as np
 
