@@ -125,13 +125,7 @@ def preprocess_one_clip(clip):
 	y = []
 	#For each clip of sound (equals to one if clip not longer than 16000)
 	for samples in n_samples:
-		samples = preEmph(samples)
-		frames, framesLength = framing(samples, L)
-		frames = windowing(frames, framesLength)
-		powFrames = fftPs(frames)
-		specgram = filterBank(powFrames, L)
-		specgram = np.log(meanNormalization(specgram) + 1e-10)
-		specgram = cleanNaN(specgram)
+		specgram = filBank(samples, clip.sample_rate)
 		if np.isnan(np.nanmin(specgram)):
 			continue
 

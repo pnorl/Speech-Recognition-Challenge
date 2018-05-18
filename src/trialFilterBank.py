@@ -8,15 +8,15 @@ import matplotlib.cm as cm
 from scipy import signal as sig
 
 
-def log_specgram(audio, sample_rate, window_size=25,
+def log_specgram(audio, sampleRate, window_size=25,
                  step_size=10, nfft=512, eps=1e-10):
 	#Old spec-maker from internet
 	#Not used anymore
-    nperseg = int(round(window_size * sample_rate / 1e3))
-    noverlap = int(round(step_size * sample_rate / 1e3))
+    nperseg = int(round(window_size * sampleRate / 1e3))
+    noverlap = int(round(step_size * sampleRate / 1e3))
     freqs, times, spec = sig.spectrogram(audio,
     								nfft=nfft,
-                                    fs=sample_rate,
+                                    fs=sampleRate,
                                     window='hamming',
                                     nperseg=nperseg,
                                     noverlap=noverlap,
@@ -24,62 +24,62 @@ def log_specgram(audio, sample_rate, window_size=25,
     return freqs, times, np.log(spec.T.astype(np.float32) + eps)
 
 
-def preEmph(signal, pre_emphasis=0.97):
+def preEmphasis(signal, emphasisLevel=0.97):
 	#Pre-emphasis
-	emphasized_signal = np.append(signal[0], signal[1:] - pre_emphasis * signal[:-1])
-	return emphasized_signal
+	emphasizedSignal = np.append(signal[0], signal[1:] - emphasisLevel * signal[:-1])
+	return emphasizedSignal
 
-def framing(signal, sample_rate, frame_size=0.025, frame_stride=0.01):
+def framing(signal, sampleRate, frameSize=0.025, frameStride=0.01):
 	#Framing
 
-	frame_length, frame_step = frame_size * sample_rate, frame_stride * sample_rate  # Convert from seconds to samples
-	signal_length = len(signal)
-	frame_length = int(round(frame_length))
-	frame_step = int(round(frame_step))
-	num_frames = int(np.ceil(float(np.abs(signal_length - frame_length)) / frame_step))  # Make sure that we have at least 1 frame
+	frameLength, frameStep = frameSize * sampleRate, frameStride * sampleRate  # Convert from seconds to samples
+	signalLength = len(signal)
+	frameLength = int(round(frameLength))
+	frameStep = int(round(frameStep))
+	noFrames = int(np.ceil(float(np.abs(signalLength - frameLength)) / frameStep))  # Make sure that we have at least 1 frame
 
-	pad_signal_length = num_frames * frame_step + frame_length
-	z = np.zeros((pad_signal_length - signal_length))
-	pad_signal = np.append(signal, z) # Pad Signal to make sure that all frames have equal number of samples without truncating any samples from the original signal
+	padSignalLength = noFrames * frameStep + frameLength
+	z = np.zeros((padSignalLength - signalLength))
+	padSignal = np.append(signal, z) # Pad Signal to make sure that all frames have equal number of samples without truncating any samples from the original signal
 
-	indices = np.tile(np.arange(0, frame_length), (num_frames, 1)) + np.tile(np.arange(0, num_frames * frame_step, frame_step), (frame_length, 1)).T
-	frames = pad_signal[indices.astype(np.int32, copy=False)]
-	return frames, frame_length
+	indices = np.tile(np.arange(0, frameLength), (noFrames, 1)) + np.tile(np.arange(0, noFrames * frameStep, frameStep), (frameLength, 1)).T
+	frames = padSignal[indices.astype(np.int32, copy=False)]
+	return frames, frameLength
 
-def windowing(frames, frame_length):
+def windowing(frames, frameLength):
 	#Windowing
-	frames *= np.hamming(frame_length)
+	frames *= np.hamming(frameLength)
 	return frames
 
 def fftPs(frames, NFFT=512):
 	#FT and power spectrum
 	NFFT = 512
-	mag_frames = np.absolute(np.fft.rfft(frames, NFFT))  # Magnitude of the FFT
-	pow_frames = ((1.0 / NFFT) * ((mag_frames) ** 2))  # Power Spectrum
-	return pow_frames
+	magFrames = np.absolute(np.fft.rfft(frames, NFFT))  # Magnitude of the FFT
+	powFrames = ((1.0 / NFFT) * ((magFrames) ** 2))  # Power Spectrum
+	return powFrames
 
-def filterBank(pow_frames, sample_rate, nfilt=40, NFFT=512):
+def filterBank(powFrames, sampleRate, nfilt=40, NFFT=512):
 	#Filter banks
-	low_freq_mel = 0
-	high_freq_mel = (2595 * np.log10(1 + (sample_rate / 2) / 700))  # Convert Hz to Mel
-	mel_points = np.linspace(low_freq_mel, high_freq_mel, nfilt + 2)  # Equally spaced in Mel scale
-	hz_points = (700 * (10**(mel_points / 2595) - 1))  # Convert Mel to Hz
-	bin = np.floor((NFFT + 1) * hz_points / sample_rate)
+	lowFreqMel = 0
+	highFreqMel = (2595 * np.log10(1 + (sampleRate / 2) / 700))  # Convert Hz to Mel
+	melPoints = np.linspace(lowFreqMel, highFreqMel, nfilt + 2)  # Equally spaced in Mel scale
+	hzPoints = (700 * (10**(melPoints / 2595) - 1))  # Convert Mel to Hz
+	bin = np.floor((NFFT + 1) * hzPoints / sampleRate)
 
 	fbank = np.zeros((nfilt, int(np.floor(NFFT / 2 + 1))))
 	for m in range(1, nfilt + 1):
-	    f_m_minus = int(bin[m - 1])   # left
-	    f_m = int(bin[m])             # center
-	    f_m_plus = int(bin[m + 1])    # right
+	    fmMinus = int(bin[m - 1])   # left
+	    fm = int(bin[m])             # center
+	    fmPlus = int(bin[m + 1])    # right
 
-	    for k in range(f_m_minus, f_m):
+	    for k in range(fmMinus, fm):
 	        fbank[m - 1, k] = (k - bin[m - 1]) / (bin[m] - bin[m - 1])
-	    for k in range(f_m, f_m_plus):
+	    for k in range(fm, fmPlus):
 	        fbank[m - 1, k] = (bin[m + 1] - k) / (bin[m + 1] - bin[m])
-	filter_banks = np.dot(pow_frames, fbank.T)
-	filter_banks = np.where(filter_banks == 0, np.finfo(float).eps, filter_banks)  # Numerical Stability
-	filter_banks = 20 * np.log10(filter_banks)  # dB
-	return filter_banks
+	filterBanks = np.dot(powFrames, fbank.T)
+	filterBanks = np.where(filterBanks == 0, np.finfo(float).eps, filterBanks)  # Numerical Stability
+	filterBanks = 20 * np.log10(filterBanks)  # dB
+	return filterBanks
 
 def meanNormalization(spec):
 	#Mean normalization
@@ -93,42 +93,42 @@ def cleanNaN(matrix):
 
 
 ###HERE ARE THE FUNCTIONS WE REACH FROM OUTSIDE
-def filBank(signal, sample_rate, frame_size=0.025, frame_stride=0.01, nfilt=40, NFFT=512):
+def filBank(signal, sampleRate, frameSize=0.025, frameStride=0.01, nfilt=40, NFFT=512):
 	##Filter bank without any other preprocessing
-	frames, frameLength = framing(signal, sample_rate, frame_size, frame_stride)
+	frames, frameLength = framing(signal, sampleRate, frameSize, frameStride)
 	frames = windowing(frames, frameLength)
 	powFrames = fftPs(frames, NFFT)
-	spectrogram = filterBank(powFrames, sample_rate, nfilt, NFFT)
+	spectrogram = filterBank(powFrames, sampleRate, nfilt, NFFT)
 	spectrogram = np.log(spectrogram)
 	return cleanNaN(spectrogram)
 
-def filBankP(signal, sample_rate, pre_emphasis=0.97, frame_size=0.025, frame_stride=0.01, nfilt=40, NFFT=512):
+def filBankP(signal, sampleRate, emphasisLevel=0.97, frameSize=0.025, frameStride=0.01, nfilt=40, NFFT=512):
 	##Filter bank with pre-emphasis
-	signal = preEmph(signal, pre_emphasis)
-	frames, frameLength = framing(signal, sample_rate, frame_size, frame_stride)
+	signal = preEmphasis(signal, emphasisLevel)
+	frames, frameLength = framing(signal, sampleRate, frameSize, frameStride)
 	frames = windowing(frames, frameLength)
 	powFrames = fftPs(frames, NFFT)
-	spectrogram = filterBank(powFrames, sample_rate, nfilt, NFFT)
+	spectrogram = filterBank(powFrames, sampleRate, nfilt, NFFT)
 	spectrogram = np.log(spectrogram)
 	return cleanNaN(spectrogram)
 
-def filBankM(signal, sample_rate, frame_size=0.025, frame_stride=0.01, nfilt=40, NFFT=512):
+def filBankM(signal, sampleRate, frameSize=0.025, frameStride=0.01, nfilt=40, NFFT=512):
 	##Filter bank with mean normalization
-	frames, frameLength = framing(signal, sample_rate, frame_size, frame_stride)
+	frames, frameLength = framing(signal, sampleRate, frameSize, frameStride)
 	frames = windowing(frames, frameLength)
 	powFrames = fftPs(frames, NFFT)
-	spectrogram = filterBank(powFrames, sample_rate, nfilt, NFFT)
+	spectrogram = filterBank(powFrames, sampleRate, nfilt, NFFT)
 	spectrogram = meanNormalization(spectrogram)
 	spectrogram = np.log(spectrogram)
 	return cleanNaN(spectrogram)
 
-def filBankPM(signal, sample_rate, pre_emphasis=0.97, frame_size=0.025, frame_stride=0.01, nfilt=40, NFFT=512):
+def filBankPM(signal, sampleRate, emphasisLevel=0.97, frameSize=0.025, frameStride=0.01, nfilt=40, NFFT=512):
 	##Filter bank with pre-emphasis and mean normalization
-	signal = preEmph(signal, pre_emphasis)
-	frames, frameLength = framing(signal, sample_rate, frame_size, frame_stride)
+	signal = preEmphasis(signal, emphasisLevel)
+	frames, frameLength = framing(signal, sampleRate, frameSize, frameStride)
 	frames = windowing(frames, frameLength)
 	powFrames = fftPs(frames, NFFT)
-	spectrogram = filterBank(powFrames, sample_rate, nfilt, NFFT)
+	spectrogram = filterBank(powFrames, sampleRate, nfilt, NFFT)
 	spectrogram = meanNormalization(spectrogram)
 	spectrogram = np.log(spectrogram)
 	return cleanNaN(spectrogram)
@@ -140,36 +140,36 @@ def runplot(file):
 	#Used to visualize
 	#Not used anymore
 
-	sample_rate, signal = scipy.io.wavfile.read('../data/train/audio/' + file)
+	sampleRate, signal = scipy.io.wavfile.read('../data/train/audio/' + file)
 	print(file)
-	print("Sample rate:", sample_rate)
+	print("Sample rate:", sampleRate)
 	print("Signal:", signal.shape)
 
 	#Running log_spec from lightweight. No other pre-processing
-	freqs, times, logSpec = log_specgram(signal, sample_rate)
+	freqs, times, logSpec = log_specgram(signal, sampleRate)
 
 	#Running log_spec from lightweight. Pre-emphasized
-	signalP = preEmph(signal)
-	freqsP, timesP, logSpecP = log_specgram(signalP, sample_rate)
+	signalP = preEmphasis(signal)
+	freqsP, timesP, logSpecP = log_specgram(signalP, sampleRate)
 
 	#Running log_spec from lightweight. Pre-emphasized and mean normalized
 	logSpecPM = meanNormalization(logSpecP)
 
 	#Running custom spec. No other pre-processing
-	frames, frameLength = framing(signal, sample_rate)
+	frames, frameLength = framing(signal, sampleRate)
 	frames = windowing(frames, frameLength)
 	powFrames = fftPs(frames)
-	custSpec = np.log(filterBank(powFrames, sample_rate) + 1e-10)
+	custSpec = np.log(filterBank(powFrames, sampleRate) + 1e-10)
 
 	#RUnning custom spec. Pre-emphasized
-	framesP, frameLengthP = framing(signalP, sample_rate)
+	framesP, frameLengthP = framing(signalP, sampleRate)
 	framesP = windowing(framesP, frameLengthP)
 	powFramesP = fftPs(framesP)
-	custSpecP = np.log(filterBank(powFramesP, sample_rate) + 1e-10)
+	custSpecP = np.log(filterBank(powFramesP, sampleRate) + 1e-10)
 
 	#Running custom spec. Pre-emphasized and mean normalized
 	#custSpecPM = meanNormalization(filterBank(powFramesP))
-	custSpecPM = np.log(meanNormalization(filterBank(powFramesP, sample_rate)) + 1e-10)
+	custSpecPM = np.log(meanNormalization(filterBank(powFramesP, sampleRate)) + 1e-10)
 	custSpecPM = cleanNaN(custSpecPM)
 
 
@@ -180,12 +180,12 @@ def runplot(file):
 	ax1 = fig.add_subplot(211)
 	ax1.set_title('Raw wave')
 	ax1.set_ylabel('Amplitude')
-	ax1.plot(np.linspace(0, sample_rate/len(signal), sample_rate), signal)
+	ax1.plot(np.linspace(0, sampleRate/len(signal), sampleRate), signal)
 
 	ax2 = fig.add_subplot(212)
 	ax2.set_title('Emphasized wave')
 	ax2.set_ylabel('Amplitude')
-	ax2.plot(np.linspace(0, sample_rate/len(signalP), sample_rate), signalP)
+	ax2.plot(np.linspace(0, sampleRate/len(signalP), sampleRate), signalP)
 
 	plt.plot()
 	plt.show()
