@@ -188,7 +188,7 @@ def preprocess2():
 	y_train = np.array(y_train)
 
     # Split train to train test and val (70, 20, 10)
-    x_train, x_tmp, y_train, y_tmp = train_test_split(x_train, y_train, test_size=0.3, random_state=2017)
-    x_test, x_valid, y_test, y_valid = train_test_split(x_tmp, y_tmp, test_size=0.33, random_state=2017)
+	x_train, x_tmp, y_train, y_tmp = train_test_split(x_train, y_train, test_size=0.3, random_state=2017)
+	x_test, x_valid, y_test, y_valid = train_test_split(x_tmp, y_tmp, test_size=0.33, random_state=2017)
 
 	return x_train, y_train, x_test, y_test, x_valid, y_valid
