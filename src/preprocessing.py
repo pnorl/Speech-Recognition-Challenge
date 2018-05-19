@@ -143,7 +143,7 @@ def transform_arrays(x, y):
 	y = np.array(y)
 	return x, y
 
-def preprocess():
+def preprocess(retVal=True):
 	'''
 	Pre-processing:
 	1. Choping/padding data
@@ -173,7 +173,17 @@ def preprocess():
 	x_train, y_train = transform_array(x_train, y_train)
 	x_test, y_test = transform_array(x_test, y_test)
 
-	return x_train, y_train, x_test, y_test, x_valid, y_valid
+	#Either returns preprocessed data
+	if retVal:
+		return x_train, y_train, x_test, y_test, x_valid, y_valid
+	
+	# Or saves them to file
+	else:
+		savePath = r'../data/train_preprocessed/'
+		fileName='filbank_only' #Important to change accordingly, else data will be overwritten
+		np.savez(savePath+fileName, x_train=x_train, y_train=y_train, x_test=x_test,
+			y_test=y_test, x_valid=x_valid, y_valid=y_valid)
+
 
 if __name__ == "__main__":
-	preprocess()
+	preprocess(retVal=False)
