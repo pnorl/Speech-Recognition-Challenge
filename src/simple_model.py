@@ -15,8 +15,14 @@ time_stamp=time()
 tb_dir = "Graph/{}".format(time_stamp)
 tensorboard=TensorBoard(log_dir=tb_dir)
 
-#Fecth and preprocess data
-x_train, y_train, x_test, y_test, x_valid, y_valid = preprocess2()
+#Fetch preprocessed data
+savePath = r'../data/train_preprocessed/'
+fileName='filbank_only'
+npzfile = np.load(savePath+fileName+'.npz')
+x_train, y_train = npzfile['x_train'],npzfile['y_train']
+x_test, y_test = npzfile['x_test'],npzfile['y_test']
+x_valid, y_valid = npzfile['x_val'],npzfile['y_val']
+#x_train, y_train, x_test, y_test, x_valid, y_valid = preprocess2()
 
 #Define params
 input_shape = x_train[0].shape
@@ -25,6 +31,23 @@ epochs = 5
 batch_size = 128 #Lower this if computer runs out of memory
 model_path = r'../model/'
 model_checkpoint_path=model_path+'checkpoint/'
+
+'''
+convention for naming models något sånt här-ish:
+raw-wav  ….or:
+PE:[BOOL]-MN:[BOOL]-RS:[BOOL]-FFT:[BOOL]-FB:[BOOL]
+
+PE=pre-emphasis (T/F)
+MN=Mean-normalization (T/F)
+RS=resampling (T/F)
+FFT=fast-fourier-transform(T/F)
+FB=filterbanks(T/F)
+'''
+#nameOfModel='PE:T-MN:F-RS:T-FFT:F-FB:T'+str(time_stamp)
+
+#Save score to
+#savePath = r'../test_results/'
+
 
 #Define computational graph
 inp = Input(shape=input_shape)
@@ -90,22 +113,6 @@ print("***Evalute model***")
 score = model.evaluate(x_test, y_test, verbose=1)
 print("Loss on test data:",score[0])
 print("Acc on test data:",score[1])
-
-'''
-convention for naming models något sånt här-ish:
-raw-wav  ….or:
-PE:[BOOL]-MN:[BOOL]-RS:[BOOL]-FFT:[BOOL]-FB:[BOOL]
-
-PE=pre-emphasis (T/F)
-MN=Mean-normalization (T/F)
-RS=resampling (T/F)
-FFT=fast-fourier-transform(T/F)
-FB=filterbanks(T/F)
-'''
-#nameOfModel='PE:T-MN:F-RS:T-FFT:F-FB:T'+str(time_stamp)
-
-#Save score to
-#savePath = r'../test_results/'
 
 #with open(savePath+nameOFModel+'.txt',”w”) as file
 #	file.write('Test loss, Test accuracy') 
