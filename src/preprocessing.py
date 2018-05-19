@@ -153,7 +153,7 @@ def preprocess(retVal=True):
 	5. Apppend to feature- and label arrays
 	'''
 	train_examples, test_examples, val_examples = read_data()
-	x_train, y_train, x_test, y_test, x_valid, y_valid = [],[],[],[],[],[]
+	x_train, y_train, x_test, y_test, x_val, y_val = [],[],[],[],[],[]
 	for clip in train_examples:
 		x,y = preprocess_one_clip(clip)
 		x_train.extend(x)
@@ -169,20 +169,20 @@ def preprocess(retVal=True):
 		x_val.extend(x)
 		y_val.extend(y)
 
-	x_val, y_val = transform_array(x_val, y_val)
-	x_train, y_train = transform_array(x_train, y_train)
-	x_test, y_test = transform_array(x_test, y_test)
+	x_val, y_val = transform_arrays(x_val, y_val)
+	x_train, y_train = transform_arrays(x_train, y_train)
+	x_test, y_test = transform_arrays(x_test, y_test)
 
 	#Either returns preprocessed data
 	if retVal:
-		return x_train, y_train, x_test, y_test, x_valid, y_valid
+		return x_train, y_train, x_test, y_test, x_val, y_val
 	
 	# Or saves them to file
 	else:
 		savePath = r'../data/train_preprocessed/'
 		fileName='filbank_only' #Important to change accordingly, else data will be overwritten
 		np.savez(savePath+fileName, x_train=x_train, y_train=y_train, x_test=x_test,
-			y_test=y_test, x_valid=x_valid, y_valid=y_valid)
+			y_test=y_test, x_val=x_val, y_val=y_val)
 
 
 if __name__ == "__main__":
