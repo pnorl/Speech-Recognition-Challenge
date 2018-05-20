@@ -3,7 +3,6 @@ from keras.layers import Convolution2D, Dense, Input, Flatten, Dropout, MaxPooli
 from sklearn.model_selection import train_test_split
 import keras
 from keras.models import Sequential
-from preprocessing import *
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping,TensorBoard
 from time import time
@@ -114,7 +113,7 @@ score = model.evaluate(x_test, y_test, verbose=1)
 print("Loss on test data:",score[0])
 print("Acc on test data:",score[1])
 
-#with open(savePath+nameOFModel+'.txt',”w”) as file
+#with open(savePath+nameOFModel+'.txt','w') as file:
 #	file.write('Test loss, Test accuracy') 
 #	file.write(score[0],score[1])
 
