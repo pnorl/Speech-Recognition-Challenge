@@ -133,6 +133,19 @@ def filBankPM(signal, sampleRate, emphasisLevel=0.97, frameSize=0.025, frameStri
 	spectrogram = np.log(spectrogram)
 	return cleanNaN(spectrogram)
 
+def wav2picture(signal,sampleRate):
+	##Converts raw wav-file to picture
+
+	#Construct figure of raw sound-data
+	figure = plt.figure()
+	plot=figure.add_subplot(111,frameon=False)
+	time = np.linspace(0,len(signal)/sampleRate,num=(len(signal)))
+	plot.plot(time,signal)
+
+	#Construct numpy representation of figure
+	fig.canvas.draw()
+    X = np.array(fig.canvas.renderer._renderer)
+    return np.mean(X,-1)[40:X.shape[0]-40,65:X.shape[1]-55] #Convert to grayscale and crop
 
 
 
