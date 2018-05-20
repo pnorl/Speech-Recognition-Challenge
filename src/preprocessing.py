@@ -97,18 +97,23 @@ def pre_emphasis(signal,pre_emphasis = 0.97):
 	return np.append(signal[0], signal[1:] - pre_emphasis * signal[:-1])
 
 
-#Transforms label to its valid form (and one-hot-encodes it?)
+#Transforms labels to one-hot-encoding
 def label_transform(labels):
 	legal_labels = 'yes no up down left right on off stop go silence unknown'.split()
+	labelToIdx={label:index for index,label in enumerate(legal_labels)}
 	nlabels = []
 	for label in labels:
 		if label == '_background_noise_':
-			nlabels.append('silence')
+			nlabels.append(labelToIdx['silence'])
 		elif label not in legal_labels:
-			nlabels.append('unknown')
+			nlabels.append(labelToIdx['unknown'])
 		else:
-			nlabels.append(label)
-	return pd.get_dummies(pd.Series(nlabels))
+			nlabels.append(labelToIdx[label])
+
+	n = len(nlabels)
+	tmp = np.zeros((n,len(legal_labels)))
+	tmp[np.arange(n),nlabels]=1
+	return tmp
 
 def preprocess_one_clip(clip):
 	# Zero pads clip where L < 16000
@@ -128,7 +133,6 @@ def preprocess_one_clip(clip):
 		specgram = filBank(samples, clip.sample_rate)
 		if np.isnan(np.nanmin(specgram)):
 			continue
-
 		x.append(specgram)
 		y.append(clip.label)
 
@@ -158,16 +162,19 @@ def preprocess(retVal=True):
 		x,y = preprocess_one_clip(clip)
 		x_train.extend(x)
 		y_train.extend(y)
+	print("Train complete")
 
 	for clip in test_examples:
 		x,y = preprocess_one_clip(clip)
 		x_test.extend(x)
 		y_test.extend(y)
+	print("Test complete")
 
 	for clip in val_examples:
 		x,y = preprocess_one_clip(clip)
 		x_val.extend(x)
 		y_val.extend(y)
+	print("Validation complete")
 
 	x_val, y_val = transform_arrays(x_val, y_val)
 	x_train, y_train = transform_arrays(x_train, y_train)
@@ -180,7 +187,7 @@ def preprocess(retVal=True):
 	# Or saves them to file
 	else:
 		savePath = r'../data/train_preprocessed/'
-		fileName='filbank_only' #Important to change accordingly, else data will be overwritten
+		fileName='xxxxxx' #Important to change accordingly, else data will be overwritten
 		np.savez(savePath+fileName, x_train=x_train, y_train=y_train, x_test=x_test,
 			y_test=y_test, x_val=x_val, y_val=y_val)
 
