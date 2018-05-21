@@ -1,17 +1,18 @@
 import keras
-from preprocessing import preprocess2
-from sklearn.metric import classification_report
+#from preprocessing import preprocess2
+from sklearn.metrics import classification_report
+import numpy as np
 
 print("***Reading data***")
 path = r'../data/train_preprocessed/'
-filename = r'raw_wav'
+filename = r'filbank_only2'
 npzfile = np.load(path+filename+'.npz')
 
 x_test, y_test = npzfile['x_test'],npzfile['y_test']
 
 print("***Loading model***")
 #Filepath+filename
-filepath = r'../model/'+'raw_wav.model'
+filepath = r'../model/'+'filbank_only1526901329.969079'
 model = keras.models.load_model(filepath)
 
 print("***Evalute model***")
@@ -33,4 +34,4 @@ for label,no in zip(legal_labels,freq):
 
 
 true_idx = np.argmax(y_test,axis=1)
-print(classification_report(y_test,labels_idx))
+print(classification_report(true_idx,labels_idx))
