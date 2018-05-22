@@ -7,6 +7,7 @@ from keras.models import Sequential
 from keras.callbacks import ModelCheckpoint, EarlyStopping,TensorBoard
 from time import time
 import numpy as np
+import os
 
 #Define tensorboard pathway and launch tensorboard
 print("Launching tensorboard")
@@ -25,51 +26,34 @@ x_valid, y_valid = npzfile['x_val'],npzfile['y_val']
 
 #Define params
 nclass = y_train.shape[1]
-epochs = 1
+epochs = 10
 batch_size = 128 #Lower this if computer runs out of memory
 #input_shape = x_train[0].shape
 input_shape = x_train.shape[1:]
 model_path = r'../model/'
 model_checkpoint_path=model_path+'checkpoint/'
+nameOfModel='raw_wav_unsampled'+str(time_stamp)
 
-print(x_train.shape)
-print(y_valid.shape)
-print(y_train.shape)
-print(y_test.shape)
-
-'''
-convention for naming models något sånt här-ish:
-raw-wav  ….or:
-PE:[BOOL]-MN:[BOOL]-RS:[BOOL]-FFT:[BOOL]-FB:[BOOL]
-
-PE=pre-emphasis (T/F)
-MN=Mean-normalization (T/F)
-RS=resampling (T/F)
-FFT=fast-fourier-transform(T/F)
-FB=filterbanks(T/F)
-'''
-nameOfModel='raw_wav'+str(time_stamp)
-#Save score to
-savePath = r'../test_results/'
+savePath = r'../test_results/' #Save score to
 
 
 #Define computational graph
 inp = Input(shape=input_shape)
-img_1 = Convolution1D(8, kernel_size=3, activation=activations.relu,kernel_initializer='he_normal')(inp)
+img_1 = Convolution1D(8, kernel_size=5,strides=2, activation=activations.relu,kernel_initializer='he_normal')(inp)
 img_1 = BatchNormalization()(img_1)
-img_1 = Convolution1D(8, kernel_size=3, activation=activations.relu,kernel_initializer='he_normal')(img_1)
-img_1 = BatchNormalization()(img_1)
-img_1 = MaxPooling1D(pool_size=2)(img_1)
-img_1 = Dropout(rate=0.2)(img_1)
-
-img_1 = Convolution1D(16, kernel_size=3, activation=activations.relu,kernel_initializer='he_normal')(img_1)
-img_1 = BatchNormalization()(img_1)
-img_1 = Convolution1D(16, kernel_size=3, activation=activations.relu,kernel_initializer='he_normal')(img_1)
+img_1 = Convolution1D(8, kernel_size=5,strides=2, activation=activations.relu,kernel_initializer='he_normal')(img_1)
 img_1 = BatchNormalization()(img_1)
 img_1 = MaxPooling1D(pool_size=2)(img_1)
 img_1 = Dropout(rate=0.2)(img_1)
 
-img_1 = Convolution1D(32, kernel_size=3, activation=activations.relu,kernel_initializer='he_normal')(img_1)
+img_1 = Convolution1D(16, kernel_size=5,strides=2, activation=activations.relu,kernel_initializer='he_normal')(img_1)
+img_1 = BatchNormalization()(img_1)
+img_1 = Convolution1D(16, kernel_size=5,strides=2, activation=activations.relu,kernel_initializer='he_normal')(img_1)
+img_1 = BatchNormalization()(img_1)
+img_1 = MaxPooling1D(pool_size=2)(img_1)
+img_1 = Dropout(rate=0.2)(img_1)
+
+img_1 = Convolution1D(32, kernel_size=5,strides=1, activation=activations.relu,kernel_initializer='he_normal')(img_1)
 img_1 = BatchNormalization()(img_1)
 img_1 = MaxPooling1D(pool_size=2)(img_1)
 img_1 = Dropout(rate=0.2)(img_1)
@@ -110,15 +94,15 @@ model.fit(x_train,y_train,batch_size=batch_size,
 
 
 #Save model to 
-model.save(os.path.join(model_path, 'cnn.model-'+str(time_stamp)))
+model.save(os.path.join(model_path,nameOfModel))
 
 #Evaluate model
-print("***Evalute model***")
+print("***Evaluate model***")
 score = model.evaluate(x_test, y_test, verbose=1)
 print("Loss on test data:",score[0])
 print("Acc on test data:",score[1])
 
-with open(savePath+nameOFModel+'.txt','w') as file:
+with open(savePath+nameOfModel+'.txt','w') as file:
 	file.write('Test loss, Test accuracy') 
-	file.write(score[0],score[1])
+	file.write(str(score[0])+', '+str(score[1]))
 
