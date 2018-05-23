@@ -102,7 +102,8 @@ score = model.evaluate(x_test, y_test, verbose=1)
 print("Loss on test data:",score[0])
 print("Acc on test data:",score[1])
 
-with open(savePath+nameOfModel+'.txt','w') as file:
-	file.write('Test loss, Test accuracy') 
-	file.write(str(score[0])+', '+str(score[1]))
+#Save metrics on test data to
+with open(savePath+nameOFModel+'.txt','w') as file:
+    file.write('Test loss, Test accuracy') 
+    file.write(score[0],score[1])
 

@@ -1,3 +1,4 @@
+#Wiht inspiration froM:
 #http://haythamfayek.com/2016/04/21/speech-processing-for-machine-learning.html
 
 import numpy as np
@@ -7,31 +8,13 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from scipy import signal as sig
 
-
-def log_specgram(audio, sampleRate, window_size=25,
-                 step_size=10, nfft=512, eps=1e-10):
-	#Old spec-maker from internet
-	#Not used anymore
-    nperseg = int(round(window_size * sampleRate / 1e3))
-    noverlap = int(round(step_size * sampleRate / 1e3))
-    freqs, times, spec = sig.spectrogram(audio,
-    								nfft=nfft,
-                                    fs=sampleRate,
-                                    window='hamming',
-                                    nperseg=nperseg,
-                                    noverlap=noverlap,
-                                    detrend=False)
-    return freqs, times, np.log(spec.T.astype(np.float32) + eps)
-
-
 def preEmphasis(signal, emphasisLevel=0.97):
-	#Pre-emphasis
+	#Performs a pre-emphasis operation on signal
 	emphasizedSignal = np.append(signal[0], signal[1:] - emphasisLevel * signal[:-1])
 	return emphasizedSignal
 
 def framing(signal, sampleRate, frameSize=0.025, frameStride=0.01):
 	#Framing
-
 	frameLength, frameStep = frameSize * sampleRate, frameStride * sampleRate  # Convert from seconds to samples
 	signalLength = len(signal)
 	frameLength = int(round(frameLength))
@@ -133,6 +116,23 @@ def filBankPM(signal, sampleRate, emphasisLevel=0.97, frameSize=0.025, frameStri
 	spectrogram = np.log(spectrogram)
 	return cleanNaN(spectrogram)
 
+
+
+#Computes a spectrogram of frequencies over time
+def log_specgram(audio, sampleRate, window_size=25,
+                 step_size=10, nfft=512, eps=1e-10):
+	#Old spec-maker from internet
+	#Not used anymore
+    nperseg = int(round(window_size * sampleRate / 1e3))
+    noverlap = int(round(step_size * sampleRate / 1e3))
+    freqs, times, spec = sig.spectrogram(audio,
+    								nfft=nfft,
+                                    fs=sampleRate,
+                                    window='hamming',
+                                    nperseg=nperseg,
+                                    noverlap=noverlap,
+                                    detrend=False)
+    return freqs, times, np.log(spec.T.astype(np.float32) + eps)
 
 def runplot(file):
 	#Used to visualize
