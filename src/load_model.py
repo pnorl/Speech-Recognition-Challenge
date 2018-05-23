@@ -5,14 +5,14 @@ import numpy as np
 
 print("***Reading data***")
 path = r'../data/train_preprocessed/'
-filename = r'raw_wav_resampled'
+filename = r'raw_wav'
 npzfile = np.load(path+filename+'.npz')
 
 x_test, y_test = npzfile['x_test'],npzfile['y_test']
 
 print("***Loading model***")
 #Filepath+filename
-filepath = r'../model/'+'raw_wav1526903080.433666'
+filepath = r'../model/'+'raw_wav_unsampled1526920379.654974'
 model = keras.models.load_model(filepath)
 
 print("***Evalute model***")
